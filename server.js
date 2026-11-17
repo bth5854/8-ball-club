@@ -77,8 +77,15 @@ io.on("connection",socket=>{
   const r=rooms.get(String(c||"").toUpperCase());
   if(!r)return socket.emit("errorMessage","방 코드를 찾을 수 없어.");
   if(r.players.length>=2)return socket.emit("errorMessage","이미 두 명이 플레이 중이야.");
-  r.players.push(socket.id);r.names[socket.id]=String(name||"플레이어 2").slice(0,12);r.status="playing";r.notice="게임 시작! 흰 공을 당겨서 쳐 봐.";send(r);
- });
+  r.players.push(socket.id);
+  r.names[socket.id]=String(name||"플레이어 2").slice(0,12);
+
+// 참가자도 Socket.IO 방에 입장
+  socket.join(r.code);
+
+  r.status="playing";
+  r.notice="게임 시작! 흰 공을 당겨서 쳐 봐.";
+  send(r);});
  socket.on("shoot",({angle,power})=>{
   const r=roomFor(socket);if(!r||r.status!=="playing"||r.turn!==socket.id||r.ballInHand)return;
   if(!Number.isFinite(angle)||!Number.isFinite(power))return;
