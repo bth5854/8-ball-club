@@ -21,3 +21,10 @@
 
 ## 참고
 이 버전은 친구와 빠르게 즐길 수 있는 간단한 8볼 프로토타입입니다. 공식 대회 규칙 전체(브레이크 규정, 콜샷, 모든 파울 세부 규정, 재배치 세부 절차)를 완전히 구현한 심판용 시뮬레이터는 아닙니다. 방 데이터는 서버 메모리에 보관되므로 서버 재시작 시 방이 초기화됩니다.
+
+## Modern gameplay update
+- Shot lock: blocks repeated shot inputs while balls are moving.
+- Cue-ball placement guide: explains one-click placement and prevents duplicate placement on the server.
+- Local trajectory preview: estimates the cue ball and first object-ball paths while aiming.
+- Render optimization: caches the static table layer and batches canvas redraws with requestAnimationFrame.
+- Local-only practice panel: appears only on localhost/127.0.0.1; includes max-power practice toggle and trajectory visibility. These controls do not appear on the public Render site.

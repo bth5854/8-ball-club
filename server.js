@@ -15,10 +15,11 @@ function rack(){
  return b;
 }
 function stopped(b){return b.every(x=>x.pocketed||(Math.abs(x.vx)<STOP&&Math.abs(x.vy)<STOP))}
-function snapshot(r){return {code:r.code,players:r.players.map(id=>({id,name:r.names[id]})),balls:r.balls,turn:r.turn,status:r.status,winner:r.winner,groups:r.groups,ballInHand:r.ballInHand,notice:r.notice};}
+function snapshot(r){return {shotInProgress:!!r.shotInProgress,code:r.code,players:r.players.map(id=>({id,name:r.names[id]})),balls:r.balls,turn:r.turn,status:r.status,winner:r.winner,groups:r.groups,ballInHand:r.ballInHand,notice:r.notice};}
 function send(r){io.to(r.code).emit("state",snapshot(r))}
 function roomFor(socket){for(const r of rooms.values())if(r.players.includes(socket.id))return r;return null}
 function simulateShot(r, shooter, angle, power){
+ r.shotInProgress=true;
  let cue=r.balls.find(b=>b.id===0); cue.vx=Math.cos(angle)*power;cue.vy=Math.sin(angle)*power;
  const before=r.balls.map(b=>({...b})), pocketed=[];
  let steps=0;
@@ -64,13 +65,14 @@ function simulateShot(r, shooter, angle, power){
    r.turn=ownPocketed.length>0?shooter:opponent;r.notice=ownPocketed.length>0?"자기 공을 넣었어. 한 번 더!":"상대 차례야.";
   }
   r.balls.forEach(b=>{b.vx=0;b.vy=0});
+  r.shotInProgress=false;
   send(r);
  }
  tick();
 }
 io.on("connection",socket=>{
  socket.on("createRoom",name=>{
-  const c=code(),r={code:c,players:[socket.id],names:{[socket.id]:String(name||"플레이어 1").slice(0,12)},balls:rack(),turn:socket.id,status:"waiting",winner:null,groups:{},assigned:false,ballInHand:null,notice:"친구가 입장하면 게임이 시작돼."};
+  const c=code(),r={code:c,players:[socket.id],names:{[socket.id]:String(name||"플레이어 1").slice(0,12)},balls:rack(),turn:socket.id,status:"waiting",winner:null,groups:{},assigned:false,ballInHand:null,shotInProgress:false,notice:"친구가 입장하면 게임이 시작돼."};
   rooms.set(c,r);socket.join(c);send(r);
  });
  socket.on("joinRoom",({code:c,name})=>{
@@ -87,13 +89,14 @@ io.on("connection",socket=>{
   r.notice="게임 시작! 흰 공을 당겨서 쳐 봐.";
   send(r);});
  socket.on("shoot",({angle,power})=>{
-  const r=roomFor(socket);if(!r||r.status!=="playing"||r.turn!==socket.id||r.ballInHand)return;
+  const r=roomFor(socket);if(!r||r.status!=="playing"||r.turn!==socket.id||r.ballInHand||r.shotInProgress)return;
   if(!Number.isFinite(angle)||!Number.isFinite(power))return;
   simulateShot(r,socket.id,angle,Math.max(1,Math.min(16,power)));
  });
  socket.on("placeCue",({x,y})=>{
   const r=roomFor(socket);if(!r||r.ballInHand!==socket.id||r.turn!==socket.id)return;
-  x=Math.max(65,Math.min(835,Number(x)));y=Math.max(65,Math.min(435,Number(y)));
+  x=Number(x);y=Number(y);if(!Number.isFinite(x)||!Number.isFinite(y))return;
+  x=Math.max(65,Math.min(835,x));y=Math.max(65,Math.min(435,y));
   const cue=r.balls[0];
   const overlap=r.balls.some(b=>b.id!==0&&!b.pocketed&&Math.hypot(b.x-x,b.y-y)<21);
   if(overlap)return socket.emit("errorMessage","다른 공과 겹치지 않는 곳에 놓아줘.");
