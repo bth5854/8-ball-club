@@ -1,10 +1,23 @@
-const express=require("express");
-const http=require("http");
-const {Server}=require("socket.io");
-const crypto=require("crypto");
-const app=express(), server=http.createServer(app), io=new Server(server);
+
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const crypto = require("crypto");
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Render 헬스 체크
+app.get("/healthz", (req, res) => {
+ res.status(200).send("OK");
+});
+
+// 정적 파일 제공
 app.use(express.static("public"));
-const rooms=new Map(), W=900,H=500;
+
+const rooms = new Map(), W = 900, H = 500;
+
 const R=10, FRICTION=.992, STOP=.055, POCKETS=[[45,45],[450,40],[855,45],[45,455],[450,460],[855,455]];
 const code=()=>crypto.randomBytes(3).toString("hex").toUpperCase();
 function rack(){
